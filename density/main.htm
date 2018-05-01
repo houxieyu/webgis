@@ -1,0 +1,222 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
+    <link rel="stylesheet" href="../css/bootstrap.min.css" />
+    <link rel="stylesheet" href="../arcgisjs/3.18/dijit/themes/claro/claro.css"
+    />
+    <link rel="stylesheet" href="../arcgisjs/3.18/esri/css/esri.css" />
+    <link rel="stylesheet" href="../Scripts/jqueryui/jquery-ui.min.css" />
+    <script src="../Scripts/jquery-1.10.2.min.js"></script>
+    <script src="../Scripts/bootstrap.min.js"></script>
+    <script src="../Scripts/jqueryui/jquery-ui.min.js"></script>
+    <script src="../arcgisjs/3.18/init.js"></script>
+    <script src="MyGis.js"></script>
+    <title>莱芜市农业普查核密度分析专题</title>
+    <style>
+        html,
+        body {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+        }
+
+        #map {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            margin-right: 10px;
+            margin-bottom: 15px;
+        }
+
+        #map {
+            border-radius: 0px;
+        }
+
+        #info {
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            padding: 10px;
+            background-color: transparent;
+            font: bold 16px Microsoft YaHei;
+            width: 200px;
+            text-align: center;
+            border-radius: 0 10px 0 0;
+        }
+
+        #messages {
+            background-color: #b6ff00;
+            box-shadow: 0 0 5px #888;
+            font-size: 1.1em;
+            padding: 0;
+            position: absolute;
+            left: 20px;
+            top: 10px;
+            z-index: 40;
+        }
+
+        #querytext {
+            position: relative;
+            left: 0;
+            padding: 0px;
+            font: bold 16px Microsoft YaHei;
+            border-radius: 0 10px 0 0;
+        }
+
+        h4,
+        h5 {
+            display: inline;
+        }
+
+        .layeritem {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        var ztinfos = ['农业人口密度', '实际耕地密度', '生猪养殖密度', '蔬菜种植密度'];
+        $(function () {
+            //显示底图
+            require([
+                "esri/map", "esri/layers/ArcGISDynamicMapServiceLayer"
+            ], function (Map, ArcGISDynamicMapServiceLayer) {
+
+                function InitMap(mapid, addstr) {
+                    var mapoption = {
+                        basemap: "osm",
+                        zoom: 12,
+                        slider: false,
+                        center: [117.67, 36.21],
+                        showLabels: true
+                    };
+                    var opacity = 0.5;
+                    map = new Map(mapid, mapoption);
+
+                    //var mapurl = basemapURL;
+                    // agoLayer = new ArcGISDynamicMapServiceLayer(mapurl, {
+                    //     "opacity": opacity
+                    // });
+                    // map.addLayer(agoLayer);
+                    if (addstr == 'geotool') {
+                        CreateGEOTool();
+                    }
+                    //CreateFlowInfo('人口数,renkou;耕地面积,shijigd;小麦面积,xiaomai;玉米面积,yumi;生猪养殖,zhucunlan;');
+                }
+
+                function AddDensity(mapid, lyno) {
+                    if (densityLayer != null) {
+                        map.removeLayer(densityLayer);
+                    }
+                    mapurl = densityURL;
+                    opacity = 0.8;
+
+                    densityLayer = new ArcGISDynamicMapServiceLayer(mapurl, {
+                        "opacity": opacity
+                    });
+                    map.addLayer(densityLayer);
+
+                    if (lyno != null) {
+                        densityLayer.setVisibleLayers([0, 1, lyno + 2]);
+                    }
+
+                    if (lyno == 0)
+                        CreateLegend(map, '密度分布图例', densityLayer, true);
+                    //map.getLayer(map.layerIds[lyno]).setVisibleLayers()
+                }
+
+                InitLayout();
+                //创建图层和图层管理界面
+                for (i = 0; i < ztinfos.length; i++) {
+                    var it = document.createElement('div');
+                    it.className = 'layeritem';
+                    it.innerHTML = "<input type='radio' name='ly' id='radio" + i + "' value='" + i +
+                        "' " + (i == 0 ?
+                            "checked='checked'" : "") +
+                        " /><h4><label for='radio" + i + "'>" + ztinfos[i] + "</label></h4>";
+                    document.getElementById('layerctl').appendChild(it);
+                }
+
+                $("input").change(function (event) {
+                    if (event.target.checked)
+                        SetDensityVisible(parseInt(event.target.value));
+                });
+
+                InitMap('map', 'geotool');
+                AddDensity('map', 0);
+
+                //addQXBJLayer();
+                //$('#myModal').modal({ backdrop: false });
+            });
+        });
+    </script>
+    <div id="tophead" style="border-radius: 0px; background-color: #2586a5; margin-bottom: 3px; 
+    background: linear-gradient(180deg,#033583,#bdcfeb); color: #ffffff; 
+    padding-top: 5px; padding-bottom: 5px;">
+        <img src="../imgs/np3logo.png" style="margin-left: 5px; height: 40px; vertical-align: top;" />
+        <span id="headtitle" class="h2" style="margin-left: 10px; color: #ffffff; font-family: 'Microsoft YaHei';">莱芜市农业普查核密度分析专题</span>
+
+        <ul class="nav navbar-right" style="display:inline-block; margin-right: 10px">
+            <!-- Single button -->
+            <div class="btn-group">
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <span class="glyphicon  glyphicon-menu-hamburger
+                    " aria-hidden="true"></span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a href="../index.html">返回</a>
+                    </li>
+                </ul>
+            </div>
+        </ul>
+    </div>
+    <div class="container-fluid" style="height: 100%;" id="cont">
+        <div class="row" style="margin-top: 2px;">
+
+            <div class="col-md-2" style="padding-right:3px;">
+                <div id="accordion">
+                    <h3>图层管理</h3>
+                    <div id="layerctl">
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-10" style="height: 100%; padding-left:3px;">
+                <div id="map" style="height: 100%;">
+                </div>
+                <div id="info">
+                    <div id="legend"></div>
+                </div>
+                <div id="messages">
+                    <button id="reshape" data-dojo-type="dijit.form.Button" style="margin:0px auto; display:block;">空间查询</button>
+                    <span id="querytext">点击按钮后在地图上按住鼠标开始绘制多边形</span>
+                </div>
+
+            </div>
+
+            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" style="top:200px;" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-body">
+                            <div class="progress progress-striped active" style="height: 35px;">
+                                <div class="progress-bar progress-bar-success" id="prog" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"
+                                    style="width:100%;">
+                                    <span class="h2" id="wcd">正在生成村级渲染图层</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.modal-content -->
+                </div>
+                <!-- /.modal-dialog -->
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

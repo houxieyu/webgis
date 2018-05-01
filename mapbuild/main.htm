@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
+    <title>莱芜市农业普查专题制图</title>
+    <link rel="stylesheet" href="../css/bootstrap.min.css" />
+    <link rel="stylesheet" href="../Scripts/jqueryui/jquery-ui.min.css" />
+    <link rel="stylesheet" href="../arcgisjs/3.18/dijit/themes/claro/claro.css"
+    />
+    <link rel="stylesheet" href="../arcgisjs/3.18/esri/css/esri.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../imgs/favicon.ico" media="screen">
+    <script src="../Scripts/jquery-1.10.2.min.js"></script>
+    <script src="../Scripts/bootstrap.min.js"></script>
+    <script src="../Scripts/jqueryui/jquery-ui.min.js"></script>
+    <script src="../arcgisjs/3.18/init.js"></script>
+    <script src="../Scripts/Please.js"></script>
+    <script src="../Scripts/mapnav.js"></script>
+    <script src="main.js"></script>
+    <style>
+        html,
+        body,
+        #map {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+        }
+
+        #map {
+            /* border-radius: 20px; */
+        }
+
+        #info {
+            font-size: xx-large;
+            position: absolute;
+            right: 30px;
+            top: 10px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            font: 14px Segoe UI;
+            width: 200px;
+            text-align: center;
+            border-radius: 0 10px 0 0;
+            overflow: auto;
+            max-height: 90%;
+            color: white;
+        }
+
+        select:focus option:checked,
+        option:focus {
+            color: white;
+            background-image: linear-gradient(#fada00, #fada00);
+        }
+
+        .col-md-9,
+        .col-md-3 {
+            padding-left: 3px;
+            padding-right: 3px;
+        }
+
+        .row {
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+        .ui-accordion-content{
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="tophead" style="border-radius: 0px; background-color: #2586a5; margin-bottom: 0px; 
+        background: linear-gradient(180deg,#033583,#bdcfeb); color: #ffffff; 
+        padding-top: 5px; padding-bottom: 5px;">
+        <img src="../imgs/np3logo.png" style="margin-left: 5px; height: 40px; vertical-align: top;" />
+        <span id="headtitle" class="h2" style="margin-left: 10px; color: #ffffff; 
+            font-family: 'Microsoft YaHei';">莱芜市农业普查专题制图</span>
+
+        <ul class="nav navbar-right" style="display:inline-block; margin-right: 10px">
+            <!-- Single button -->
+            <div class="btn-group">
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <span class="glyphicon  glyphicon-menu-hamburger
+                        " aria-hidden="true"></span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a href="../index.html">返回</a>
+                    </li>
+                </ul>
+            </div>
+        </ul>
+    </div>
+    <div class="container-fluid" style="height: 100%;" id="cont">
+        <div class="row" style="margin-top: 2px;">
+            <div class="col-md-3">
+                <div id="accordion">
+                    <h3>渲染层级</h3>
+                    <div class="row" style="margin-bottom: 5px;">
+                        <div class="btn-group" data-toggle="buttons">
+                            <label id="dlc" class="btn btn-warning ">
+                                <input id="radiodlc" type="radio" name="options"> 大莱城区
+                            </label>
+                            <label id="xq" class="btn btn-warning">
+                                <input id="radioxq" type="radio" name="options"> 新五区
+                            </label>
+                            <label id="xz" class="btn btn-warning active">
+                                <input id="radioxz" type="radio" name="options" checked="checked"> 乡镇级
+                            </label>
+                            <label id="cun" class="btn btn-warning">
+                                <input id="radiocun" type="radio" name="options"> 村级
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div id="accordion2">
+                    <h3>颜色渲染</h3>
+                    <div>
+                        <div class="row" style="margin-bottom: 5px;">
+                            <label>选择调查对象：</label>
+                            <div>
+                                <select id="seldcdx">
+                                    <option value="农户">农户</option>
+                                    <option value="规模户">规模户</option>
+                                    <option value="经营单位">经营单位</option>
+                                    <option value="综合">综合</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-bottom: 5px;">
+                            <label>渲染指标：</label>
+                            <div>
+                                <select id="selxrzb">
+
+                                </select>
+                            </div>
+                        </div>
+                        <div style="text-align: center;">
+                            <button onclick="RenderMap(1);">生成专题图</button>
+                        </div>
+                    </div>
+                    <h3>符号渲染</h3>
+                    <div>
+                        <div class="row" style="margin-bottom: 5px;">
+                            <label>选择调查对象：</label>
+                            <div>
+                                <select id="seldcdxsymbol">
+                                    <option value="农户">农户</option>
+                                    <option value="规模户">规模户</option>
+                                    <option value="经营单位">经营单位</option>
+                                    <option value="综合">综合</option>
+                                </select>
+                            </div>
+                        </div>
+
+
+                        <div class="row" style="margin-bottom: 5px;">
+                            <div class="row" style="margin-bottom: 5px;">
+                                <label>色深映射指标</label>
+                                <div>
+                                    <select id="selxrzbopc">
+    
+                                    </select>
+                                </div>
+                            </div>
+    
+                                <label>大小映射指标</label>
+                            <div>
+                                <select id="selxrzbsize">
+
+                                </select>
+                            </div>
+                        </div>
+
+
+
+                        <div style="text-align: center;">
+                            <button onclick="RenderMap(2);">生成专题图</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <div class="col-md-9" style="height: 100%;">
+                <div id="map" style="height: 100%;">
+                </div>
+                <div id="info">
+                    <div id="legend"></div>
+                </div>
+            </div>
+
+            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="margin-top: 10%;">
+
+                <div class="modal-dialog" style="left: auto;">
+                    <div class="modal-content">
+                        <div class="modal-body">
+                            <div class="progress" style="height: 35px;">
+                                <div class="progress-bar progress-bar-success progress-bar-striped" id="prog" role="progressbar" aria-valuenow="60" aria-valuemin="0"
+                                    aria-valuemax="100" style="">
+                                    <span class="h2" id="wcd"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.modal-content -->
+                </div>
+                <!-- /.modal-dialog -->
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

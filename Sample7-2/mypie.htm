@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>饼图专题图</title>
+    <link rel="stylesheet" href="http://124.133.27.90:6081/arcgis_js_api3.18/library/3.18/3.18/dijit/themes/claro/claro.css"
+    />
+    <link rel="stylesheet" href="http://124.133.27.90:6081/arcgis_js_api3.18/library/3.18/3.18/esri/css/esri.css" />
+    <link href="ChartInfoWindow.css" rel="stylesheet" />
+    <style>
+    h2,h3{
+        margin-bottom: 3px;
+    }
+        html,
+        body,
+        #map {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #map{
+            /* position: relative; */
+        }
+        #legend{
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color:white;
+            background-color: rgba(0,0,0, 0.5);
+            z-index: 9999;
+            padding:15px;
+            padding-top: 0px;
+        }
+    </style>
+    <script>
+        var dojoConfig = {
+            packages: [{
+                name: "CustomModules",
+                location: location.pathname.replace(/\/[^/]+$/, "") + "/js/CustomModules"
+            }]
+        };
+    </script>
+        <script src="../Scripts/jquery-1.10.2.min.js"></script>
+    <script src="http://124.133.27.90:6081/arcgis_js_api3.18/library/3.18/3.18/init.js"></script>
+    <script>
+        var result;
+        var datas;
+        var showFields;
+        var title;
+        var colorstrs = ["rgb(152,141,194)",
+    "rgb(126,182,204)",
+    "rgb(108,217,150)",
+    "rgb(164,230,90)",
+    "rgb(242,166,65)"];
+        /**
+         * 
+         * 转换短区划码
+         * 
+         */
+        function getAreaTrim(code) {
+            if (code.substr(2, 2) == "00")
+                return code.substr(0, 2);
+            else if (code.substr(4, 2) == "00")
+                return code.substr(0, 4);
+            else if (code.substr(6, 3) == "000")
+                return code.substr(0, 6);
+            else if (code.substr(9, 3) == "000")
+                return code.substr(0, 9);
+            return code;
+        }
+
+        function filterdatas(layno, result) {
+            /** 过滤数据，根据区划长度、区划码 */
+            var sublen = 0,
+                filtercode = '';
+            switch (layno) {
+                //大莱芜图层，过滤掉新五区
+                case 0:
+                    sublen = 6;
+                    filtercode = '37121';
+                    break;
+                    //新区图层，过滤掉大莱芜区
+                case 1:
+                    sublen = 6;
+                    filtercode = '371202';
+                    break;
+                case 2:
+                    sublen = 9;
+                    break;
+                case 3:
+                    sublen = 12;
+                    break;
+            }
+            //过滤数据，只保留图层中有的区划
+            var datas = result.filter(function (x) {
+                console.log(x['区划码'].substr(0, (filtercode == '' ? 1 : filtercode.length)));
+                return x['区划码'].length == sublen &&
+                    x['区划码'].substr(0, (filtercode == '' ? 1 : filtercode.length)) != filtercode;
+            });
+
+            return datas;
+        }
+        require(["esri/map", "esri/layers/FeatureLayer", "esri/layers/ArcGISTiledMapServiceLayer",
+            "esri/symbols/SimpleLineSymbol", "esri/symbols/SimpleFillSymbol",
+            "esri/renderers/SimpleRenderer", "esri/Color",
+            "CustomModules/ChartInfoWindow", "CustomModules/CustomTheme", "CustomModules/geometryUtils",
+            "dojo/_base/array", "dojo/dom-construct", "dojo/_base/window",
+            "dojox/charting/Chart", "dojox/charting/action2d/Highlight", "dojox/charting/action2d/Tooltip",
+            "dojox/charting/plot2d/Pie",
+            "dojo/domReady!"
+        ], function (
+            Map, FeatureLayer, ArcGISTiledMapServiceLayer,
+            SimpleLineSymbol, SimpleFillSymbol,
+            SimpleRenderer, Color, ChartInfoWindow, CustomTheme, geometryUtils,
+            array, domConstruct, win,
+            Chart, Highlight, Tooltip
+        ) {
+            var map = new Map("map", {
+                basemap: "osm",
+                center: [117.67, 36.3],
+                zoom: 11,
+                slider: false
+            });
+            // var agoServiceURL = "http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer";
+            // var agoLayer = new ArcGISTiledMapServiceLayer(agoServiceURL);
+            // map.addLayer(agoLayer);
+
+            var featureLayer = new FeatureLayer(
+                "http://124.133.27.90:6080/arcgis/rest/services/lwbj/MapServer/3", {
+                    mode: FeatureLayer.MODE_SNAPSHOT,
+                    outFields: ["AREA_CODE", "NAME"]
+                });
+            var defaultSymbol = new SimpleFillSymbol().setStyle(SimpleFillSymbol.STYLE_NULL);
+            var renderer = new SimpleRenderer(defaultSymbol);
+            featureLayer.setRenderer(renderer);
+            featureLayer.on("update-end", function (evt) {
+                var allFields = [
+                    {title:'厕所情况',data:["水冲式卫生厕", "水冲式非卫生厕","卫生旱厕","普通旱厕","无厕所"]}
+                    ,{title:'农户规模户人口',data:["农户人口数", "规模户人口数"]}
+                    ,{title:'住房情况',data:["商品房数量", "非商品房数"]}
+                    ,{title:'住房结构',data:["钢混住房", "砖混住房","砖木住房","土坯房","其他结构"]}
+                    ,{title:'饮水水源',data:["自来水","井水泉水","桶装水","其他水源"]}
+                ];
+                title = allFields[4].title;
+                showFields = allFields[4].data;
+                $.getJSON("../Scripts/bigdata.json", function (ret) {
+                    result = ret;
+                    datas = filterdatas(2, result);
+                    createChartInfoWindow(featureLayer, showFields);
+                });
+            });
+            map.addLayer(featureLayer);
+
+            function createChartInfoWindow(layer, showFields) {
+                var layerId = layer.id;
+
+                var max = maxAttribute(layer.graphics, showFields);
+                var featureSums = [];
+                array.forEach(layer.graphics, function (graphic) {
+                    var sum = 0;
+                    for (var i = 0, j = showFields.length; i < j; i++) {
+                        var val = datas.find((n) => n.区划码 ==
+                            getAreaTrim(graphic.attributes.AREA_CODE))[showFields[i]];
+                        sum += parseFloat(val);
+                    }
+
+                    featureSums.push(sum);
+                });
+                var sumMax = -10000;
+                array.forEach(featureSums, function (featureSum) {
+                    if (sumMax < featureSum) sumMax = featureSum;
+                });
+
+                var optinalChart = null;
+                array.forEach(layer.graphics, function (graphic, index) {
+                    var infoWindow = new ChartInfoWindow({
+                        domNode: domConstruct.create('div', null, document.getElementById('map'))
+                    });
+                    infoWindow.setMap(map);
+
+                    var curSum = 0;
+                    for (var i = 0, j = showFields.length; i < j; i++) {
+                        var val =  datas.find((n) => n.区划码 ==
+                            getAreaTrim(layer.graphics[index].attributes.AREA_CODE))[showFields[i]];
+                        curSum += parseFloat(val);
+                    }
+                    var radius = 150*curSum / sumMax+50;
+                    var styleStr = "width:" + radius + "px;height:" + radius + "px";
+                    var nodeChart = domConstruct.create("div", {
+                        id: 'nodeTest' + index,
+                        style: styleStr
+                    }, win.body());
+                    var chart = makePieChart(nodeChart, layer.graphics[index].attributes, showFields);
+                    var optinal = true;
+                    for (var m = 0, n = showFields.length; m < n; m++) {
+                        var val =  datas.find((n) => n.区划码 ==
+                            getAreaTrim(layer.graphics[index].attributes.AREA_CODE))[showFields[m]];
+                        if (val <= 0) {
+                            optinal = false;
+                        }
+                    }
+                    if (optinal == true) {
+                        optinalChart = chart;
+                    }
+                    infoWindow.resize(radius + 50, radius + 50);
+                    infoWindow.align = "Center";
+
+                    var labelPt = geometryUtils.getPolygonCenterPoint(graphic.geometry);
+                    infoWindow.setContent(nodeChart);
+                    infoWindow.__mcoords = labelPt;
+                    infoWindow.show(map.toScreen(labelPt));
+                });
+
+                CreateLegend();
+            }
+
+            function CreateLegend(){
+                $('#legend').append('<h2>图例：</h2><h3>'+title+'</h3>');
+                for(var i=0;i< showFields.length;i++){
+
+                    $('#legend').append('<div style=\'margin-bottom:3px;\'><div style=\'vertical-align:middle;height:30px;width:30px;display:inline-block; background-color:'+colorstrs[i]+';\'></div>  <span>'+showFields[i]+'</span></div>')
+                }
+                showFields.forEach(function(x){
+                });
+            }
+            function GetMinMax(field) {
+                var min = parseFloat(datas[0][field]),
+                    max = parseFloat(datas[0][field]);
+                $.each(datas, function (n, row) {
+                    if (parseFloat(row[field]) > max)
+                        max = parseFloat(row[field]);
+                    if (parseFloat(row[field]) < min)
+                        min = parseFloat(row[field]);
+                });
+                return {
+                    min: min,
+                    max: max
+                };
+            }
+
+            function maxAttribute(graphics, showFields) {
+                var max = -100000;
+                array.forEach(graphics, function (graphic) {
+                    var attributes = graphic.attributes;
+                    for (var i = 0, j = showFields.length; i < j; i++) {
+                        var val  = datas.find((n) => n.区划码 ==
+                            getAreaTrim(graphic.attributes.AREA_CODE))[showFields[i]];
+                        if (max < val) {
+                            max = val;
+                        }
+                    }
+                });
+
+                return max;
+            }
+
+            function makePieChart(node, attributes, showFields) {
+                var chart = new Chart(node, {
+                    margins: {
+                        l: 0,
+                        r: 0,
+                        t: 0,
+                        b: 0
+                    }
+                }).
+                setTheme(CustomTheme).
+                addPlot("default", {
+                    type: "Pie"
+                });
+                var serieValues = [];
+                var regionName = attributes["NAME"];
+                var length = showFields.length;
+                for (var i = 0; i < length; i++) {
+                    var val =  datas.find((n) => n.区划码 ==
+                            getAreaTrim(attributes.AREA_CODE))[showFields[i]];
+                    serieValues.push({
+                        y: val,
+                        legend: showFields[i],
+                        region: regionName
+                    });
+                }
+                chart.addSeries(showFields[i], serieValues, {
+                    stroke: {
+                        color: "black"
+                    }
+                });
+
+                var anim1 = new Highlight(chart, "default", {
+                    highlight: function (e) {
+                        return "lightskyblue";
+                    }
+                });
+                var anim2 = new Tooltip(chart, "default", {
+                    text: function (o) {
+                        var fieldName = o.chart.series[0].data[o.x].legend;
+                        return (o.chart.series[0].data[o.x].region + " " + fieldName + "：" + o.y);
+                    }
+                });
+                chart.render();
+
+                return chart;
+            }
+        });
+    </script>
+</head>
+
+<body class="claro">
+    <div id="map">
+            <div id="legend">
+                    
+                </div>
+    </div>
+</body>
+
+</html>

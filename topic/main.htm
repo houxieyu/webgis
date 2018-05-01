@@ -1,0 +1,337 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>农业居民生活消费水平</title>
+    <link rel="stylesheet" href="../css/jquery-ui.min.css" />
+    <link rel="stylesheet" href="../css/bootstrap.min.css" />
+    <link rel="stylesheet" href="../arcgisjs/3.18/dijit/themes/claro/claro.css"/>
+    <link rel="stylesheet" href="../arcgisjs/3.18/esri/css/esri.css" />
+    <script src="../Scripts/echarts.min.js"></script>
+    <script src="../Scripts/shine.js"></script>
+    <script src="../Scripts/jquery-1.10.2.min.js"></script>
+    <script src="../Scripts/bootstrap.min.js"></script>
+    <script src="../Scripts/Please.js"></script>
+    <script src="../arcgisjs/3.18/init.js"></script>
+    <script src="../Scripts/MapNav.js"></script>
+    <style>
+        #info {
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            padding: 10px;
+            background-color: transparent;
+            font: bold 16px Microsoft YaHei;
+            width: 300px;
+            text-align: center;
+            border-radius: 0 10px 0 0;
+        }
+
+        .col-md-6,
+        .col-md-4 {
+            padding-left: 0px;
+            padding-right: 0px;
+        }
+
+        #map {
+            margin-right: 3px;
+        }
+
+        .row {
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+    </style>
+
+    <script>
+        /* @param  {int} layno 0 老区县 1 新区县 2 乡镇 3 村   */
+
+        function filterdatas(isxq, result, areacode) {
+            /** 过滤数据，根据区划长度、区划码 */
+            var sublen = 0,
+                filtercode = '';
+            switch (areacode.length) {
+                case 4:
+                    sublen = 6;
+                    //新区图层，过滤掉大莱芜区
+                    if (isxq)
+                        filtercode = '371202';
+                    //大莱芜图层，过滤掉新五区
+                    else
+                        filtercode = '37121';
+                    break;
+                case 6:
+                    sublen = 9;
+                    break;
+                case 9:
+                    sublen = 12;
+                    break;
+            }
+            //过滤数据，只保留图层中有的区划
+            var datas = result.filter(function (x) {
+                //console.log(x['区划码'].substr(0, (filtercode == '' ? 1 : filtercode.length)));
+                if (areacode.substr(0, 5) != '37121')
+                    return x['区划码'].length == sublen //区划码长度为相应级别
+                        &&
+                        x['区划码'] .substr(0, (filtercode == '' ? 1 : filtercode.length)) != filtercode //新区大区区分
+                        &&
+                        x['区划码'].substr(0, areacode.length) == areacode; //指定区域
+                else {
+                    return $.inArray(x['区划码'],xqh[areacode]) >= 0;
+                }
+            });
+            return datas;
+        }
+
+        function setidx(idx) {
+            //初始化数据参数
+            zbList = zbLists[idx].data;
+            title = zbLists[idx].name;
+            curField = zbList[1];
+            $("title").html('莱芜市农业普查' + title + '专题');
+            $("#headtitle").text('莱芜市农业普查' + title + '专题');
+            //清空菜单
+            $("#zbul").children().remove();
+            //动态建立菜单
+            for (var i = 0; i < zbList.length; i++) {
+                var state = '';
+                if (i == 1) state = 'class="active"';
+                $("#zbul").append(
+                    '<li role="presentation" style="border-width:1px;border-color:#00ff00;" data-type="hj" ' +
+                    state + '><a href="#" style="padding:5px;">' + zbList[i] + '</a></li>')
+            }
+            //导航按钮状态处理，功能执行
+            $("#zbul li").click(function () {
+                $("#zbul").children().removeClass("active");
+                $(this).addClass("active");
+                var fieldname;
+                if ($(this).attr('data-type') == 'hj') {
+                    fieldname = $(this).text();
+                } else fieldname = '普通户' + $(this).text();
+                RenderLayer(curdzm, fieldname, 2); //Math.ceil(Math.random() * 3));
+                curField = $(this).text();
+                UpdateView();
+            });
+            //初始化图表
+            InitChart();
+            //图层渲染
+            RenderLayer(curdzm, curField,2);
+            //绘制图表：地区各指标柱图、选中指标地区对比图、结构图、子地区各指标排名图
+            UpdateView();
+        }
+
+        $(function () {
+            //加载数据，(指标参数)
+            //将数据保存到全局
+            $.getJSON("../Scripts/bigdata.json", function (result) {
+                //这里要过滤数据
+                datas = filterdatas(true, result, '3712');
+                //区县列表
+                for (var i = 0; i < datas.length; i++) {
+                    qxdzmlist.push({
+                        code: datas[i]['区划码'],
+                        name: datas[i]['地区']
+                    });
+                }
+
+                //初始化数据参数
+                zbList = zbLists[0].data;
+                title = zbLists[0].name;
+                curField = zbList[1];
+                //初始化map加载底图
+
+                InitMap('map', '', true);
+                setidx(0);
+                //地图浏览
+                $("#dtnext").click(function () {
+                    for (var i = 0; i < qxdzmlist.length; i++) {
+                        if (curdzm == qxdzmlist[i].code) {
+                            var idx;
+                            if (i == qxdzmlist.length - 1) idx = 0;
+                            else idx = i + 1;
+                            curdzm = qxdzmlist[idx].code;
+                            curdq = qxdzmlist[idx].name;
+                            seldzm = curdzm;
+                            seldq = curdq;
+                            var layno;
+                            if (curdzm.length == 6) layno = '3';
+                            else if (curdzm.length == 9) layno = '4';
+                            else return;
+                            AddFeatureLayer(layno, curdzm, true);
+                            //过滤数据
+                            datas = filterdatas(true, result, curdzm);
+                            RenderLayer(curdzm, curField,2);
+                            UpdateView();
+                        }
+                    }
+                });
+                //地图下钻
+                $("#dtxz").click(function () {
+                    seldzm = getAreaTrim(seldzm);
+                    if (seldzm != curdzm) {
+                        var layno;
+                        if(seldzm=='371202' ){
+                            seldzm = '37121'
+                            layno = '2';
+                        }
+                        else if (seldzm.length == 6) layno = '3';
+                        else if (seldzm.length == 9) layno = '4';
+                        else return;
+                        AddFeatureLayer(layno, seldzm, true);
+                        curdzm = seldzm;
+                        curdq = seldq;
+                        // if(seldzm == '371202'){
+                        //     curdzm = '37121';
+                        // }
+                        if(curdzm == '37121')
+                            datas = filterdatas(true, result, '3712');
+                        else 
+                             datas = filterdatas(false, result, seldzm);
+                    
+                        RenderLayer(curdzm, curField,2);
+                        UpdateView();
+                    }
+
+                });
+                //地图上钻
+                $("#dtsz").click(function () {
+                    var layno;
+                    var sublen;
+                    if(curdzm.length == 5 || curdzm=='371202'){
+                        curdzm = '3712';
+                        layno = '1';
+                        sublen = 4;
+                    }
+                    else if (curdzm.length == 6) {
+                        curdzm = '37121';
+                        layno = '2';
+                        sublen = 5;
+        
+                    } else if (curdzm.length == 9) {
+                        layno = '3';
+                        sublen = 6;
+                    } else return;
+
+                    if(curdzm.substr(0,6)!='371202'){
+                        curdzm = curdzm.substr(0, sublen);
+                    }
+                    else{
+                        curdzm = ssqh[curdzm];
+                    }
+                    //查询地区名称
+                    if(curdzm=='37121')
+                        curdq = '莱芜市';
+                    else
+                        curdq = result.find(x=>x['区划码']==curdzm)['地区'];                    
+                    AddFeatureLayer(layno, curdzm, true);
+                    seldzm = curdzm;
+
+                    seldq = curdq;
+                    if(curdzm == '37121'){
+                        //过滤数据
+                        datas = filterdatas(true, result, '3712');
+                    }
+                    else {
+                         datas = filterdatas(false, result, curdzm);
+                    }
+                    RenderLayer(curdzm, curField,2);
+                    UpdateView();
+                });
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <div style="border-radius: 0px; background-color: #2586a5; margin-bottom: 3px; 
+        background: linear-gradient(180deg,#033583,#bdcfeb); color: #ffffff; 
+        padding-top: 5px; padding-bottom: 3px;">
+        <img src="../imgs/np3logo.png" style="margin-left: 5px; height: 35px; vertical-align: top;" />
+        <span id="headtitle" class="h2" style="margin-left: 10px; color: #ffffff; font-family: 'Microsoft YaHei';">农业居民生活消费水平</span>
+
+        <ul class="nav navbar-right" style="display:inline-block; margin-right: 10px">
+            <!-- Single button -->
+            <div class="btn-group">
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <span class="glyphicon  glyphicon-menu-hamburger
+                        " aria-hidden="true"></span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a href="#" onclick="setidx(0)">农民生活水平专题</a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="setidx(1)">种植业专题</a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="setidx(2)">林业专题</a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="setidx(3)">畜牧业专题</a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="setidx(4)">渔业专题</a>
+                    </li>
+                    <li role="separator" class="divider"></li>
+                    <li>
+                        <a href="../index.html">返回</a>
+                    </li>
+                </ul>
+            </div>
+        </ul>
+    </div>
+    <div class="container-fluid">
+        <ul id="zbul" class="nav nav-pills" style="display:inline-block">
+        </ul>
+        <div class="row">
+            <div class="col-md-6" style="height: 400px;">
+                <div id="map">
+                </div>
+                <div id="info">
+                    <input class="btn btn-default" type="button" id="dtxz" value="地图下钻" />
+                    <input class="btn btn-default" type="button" id="dtsz" value="地图上钻" />
+                    <!-- <input class="btn btn-default" type="button" id="dtnext" value="地图浏览" /> -->
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="panel panel-success " style=" margin-bottom:0px;">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">地区排名
+                        </h3>
+                    </div>
+                    <div class="panel-body supportchart" style="height: 362px;" id="chart_pm">
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="panel panel-success">
+                    <div class="panel-body supportchart" style="height: 320px;" id="chart_cur">
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="panel panel-success">
+                    <div class="panel-body supportchart" style="height: 320px;" id="chart_db">
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="panel panel-success">
+                    <div class="panel-body supportchart" style="height: 320px;" id="chart_rj">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div>
+
+        </div>
+    </div>
+</body>
+
+</html>

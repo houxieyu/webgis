@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>莱芜市农业普查一张图</title>
+
+    <link rel="stylesheet" href="../arcgisjs/4.3/dijit/themes/claro/claro.css" />
+    <link rel="stylesheet" href="../arcgisjs/4.3/esri/css/main.css" />
+    <link rel="stylesheet" href="http://cdn.static.runoob.com/libs/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="http://cdn.static.runoob.com/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="http://cdn.static.runoob.com/libs/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="shortcut icon" type="image/x-icon" href="0;'/8.[P'../favicon.ico" media="screen">
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        #ui {
+            padding: 3px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 5px #888;
+            position: absolute;
+            right: 10px;
+            top: 10px;
+        }
+
+        .bklable {
+            color: #ffff00;
+        }
+
+        #titleInfo {
+            position: absolute;
+            left: 60px;
+            top: 0px;
+            color: rgb(0, 0, 0);
+            font-family: Lucida Grande, Helvetica, sans-serif;
+        }
+
+        #titletext {
+            font-size: 40px;
+        }
+
+        #popinfo {
+            padding-left: 3px;
+            padding-right: 3px;
+            color: white;
+            position: absolute;
+            font-family: "simsun", "Microsoft YaHei";
+            font-size: 18px;
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+
+        #messages {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.6);
+            box-shadow: 0 0 5px #888;
+            font-size: 1.1em;
+            padding: 0;
+            right: 10px;
+            bottom: 20px;
+            z-index: 40;
+            color: #fff;
+        }
+        #messages button{
+            color:black;
+        }
+        #querytext {
+            position: relative;
+            left: 0;
+            padding: 0px;
+            font: bold 12px Microsoft YaHei;
+            border-radius: 0 10px 0 0;
+        }
+
+        .panel-result {
+            cursor: pointer;
+            margin: 2px 0;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-result:hover,
+        .panel-result:focus {
+            color: orange;
+            background-color: rgba(0, 0, 0, 0.75);
+        }
+
+        #canvas2 {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+        }
+
+        .panel-side {
+
+            padding: 2px;
+            box-sizing: border-box;
+            top: 0;
+            right: 0;
+            color: #fff;
+            background-color: rgba(0, 0, 0, 0);
+            overflow: auto;
+            z-index: 60;
+            font-size: 14px;
+            ;
+            position: relative;
+            max-height: 400px;
+        }
+
+        .panel-side ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .panel-side li {
+            list-style: none;
+        }
+    </style>
+    <!-- 前面加gis引用，require用户的是arcgis dojo库的函数，不执行gg.js文件
+       后面加gis引用，require用的是require.js的函数，还是需要在gg.js文件中定义require路径，否则不加载arcgis模块，定以后还是会加载全部arcgis.js文件
+    <script src="library/4.3/4.3/init.js" ></script>
+    -->
+    <!--<script src="three.min.js"></script>-->
+    <script src="require.js" data-main="main.js"></script>
+</head>
+
+<body>
+    <div id="viewDiv">
+        <div id="titleInfo">
+            <span id="titletext">莱芜市农业普查一张图</span>
+        </div>
+        <div id="ui">
+            <div style="margin-bottom: 5px">
+                指标设置
+                <div class="btn-group" data-toggle="buttons">
+                    <label id="nyrk" class="btn btn-success active">
+                        <input type="radio" name="options" checked="checked"> 农业人口数
+                    </label>
+                    <label id="nhs" class="btn btn-success">
+                        <input type="radio" name="options"> 农户数
+                    </label>
+                    <label id="gmhs" class="btn btn-success">
+                        <input type="radio" name="options"> 规模户数
+                    </label>
+                    <label id="jydws" class="btn btn-success">
+                        <input type="radio" name="options"> 农业经营单位数
+                    </label>
+                </div>
+            </div>
+            <div style="margin-bottom: 5px">
+                渲染设置
+                <div class="btn-group" data-toggle="buttons">
+                    <label id="bt3dcol" class="btn btn-primary active">
+                        <input type="radio" name="options"> 3D柱图
+                    </label>
+                    <label id="bt3dpolycol" class="btn btn-primary">
+                        <input type="radio" name="options"> 3D多边柱图
+                    </label>
+                    <!-- <label id="bt2d" class="btn btn-primary">
+                        <input type="radio" name="options"> 2D
+                    </label> -->
+                </div>
+            </div>
+            <div style="margin-bottom: 5px">
+                层级设置
+                <div class="btn-group" data-toggle="buttons">
+                    <label id="dlc" class="btn btn-warning ">
+                        <input type="radio" name="options"> 大莱城区
+                    </label>
+                    <label id="xq" class="btn btn-warning">
+                        <input type="radio" name="options"> 新五区
+                    </label>
+                    <label id="xz" class="btn btn-warning active">
+                        <input type="radio" name="options" checked="checked"> 乡镇级
+                    </label>
+                    <!-- <label id="cun" class="btn btn-warning">
+                        <input type="radio" name="options"> 村级
+                    </label> -->
+                </div>
+            </div>
+            <div>图层管理
+                <div class="btn-group" data-toggle="buttons">
+                    <!-- <button id="bt3danim">动画</button> -->
+                    <!--<button id="btpiao">开启飘窗</button>-->
+                    <button id="btbmvec" class="btn btn-info">矢量底图</button>
+                    <button id="btbmimg" class="btn btn-info">影像底图</button>
+                    <button id="btbmter" class="btn btn-info">DEM高程</button>
+                    <button id="bt3clear" class="btn btn-info">清除图层</button>
+                </div>
+            </div>
+
+            <!--<button id="bt3dcol11">3D平面</button>-->
+            <!--<button id="bt3dcol10">关闭3D</button>-->
+            <!--<label class=""><input type="checkbox" id="ck1" checked="checked" />区划图层</label>-->
+        </div>
+        <div id="messages">
+            <div style="text-align: center">
+                <button id="btspatialquery">空间查询</button>
+                <button id="btspatialqueryclear">清除查询结果</button>
+                <span style="font-size: 14px;">拓扑关系：</span>
+                <select  id="tpgx">
+                    <option value="intersects">相交</option>
+                    <option value="contains">包含</option>
+                    <option value="overlaps">环绕</option>
+                    <option value="crosses">穿过</option>
+                    <!--<option value="touches">touches</option>-->
+                    <!--<option value="within">within</option>-->
+                </select>
+            </div>
+            <span id="querytext">点击按钮后在地图上单击鼠标开始绘制查询区域，右键结束</span>
+            <div class="panel-side">
+                <ul id="nyc_graphics"></ul>
+            </div>
+        </div>
+        <!--<canvas id="canvas2" width="2000px" height="2000px"></canvas>-->
+        <div id="popinfo" oncontextmenu="return false;"></div>
+    </div>
+</body>
+
+</html>

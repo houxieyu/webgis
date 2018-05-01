@@ -1,0 +1,87 @@
+﻿/* Move down content because we have a fixed navbar that is 50px tall */
+body {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+/* Wrapping element */
+/* Set some basic padding to keep content from hitting the edges */
+.body-content {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+/* Override the default bootstrap behavior where horizontal description lists 
+   will truncate terms that are too long to fit in the left column 
+*/
+.dl-horizontal dt {
+    white-space: normal;
+}
+
+/* Set widths on the form inputs since otherwise they're 100% wide */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="tel"],
+input[type="select"] {
+    max-width: 2800px;
+}
+
+/* Responsive: Portrait tablets and up */
+@media screen and (min-width: 768px) {
+    .jumbotron {
+        margin-top: 20px;
+    }
+    .body-content {
+        padding: 0;
+    }
+}
+
+h1,h2,h3,h4,h5
+{
+    font-family:"黑体";
+}
+
+h2
+{margin-top:0px;}
+
+        .myrow {
+            margin-bottom: 5px;
+        }
+
+               html, body, #map {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            margin-right: 5px;
+            margin-left: 5px;
+            margin-bottom: 5px;
+        }
+
+        #map {
+            border-radius: 20px;
+        }
+
+        #info {
+            font-size: xx-large;
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            padding: 10px;
+            background-color: #ddd;
+            font: 14px Segoe UI;
+            width: 200px;
+            text-align: center;
+            border-radius: 0 10px 0 0;
+        }
+
+                a
+        {
+            overflow:hidden;
+            white-space:nowrap;
+            text-overflow:ellipsis;
+        }
+
+                .supportchart{
+                   height:250px;
+                }
