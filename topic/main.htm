@@ -90,8 +90,8 @@
             zbList = zbLists[idx].data;
             title = zbLists[idx].name;
             curField = zbList[1];
-            $("title").html('莱芜市农业普查' + title + '专题');
-            $("#headtitle").text('莱芜市农业普查' + title + '专题');
+            $("title").html('农业普查' + title + '专题');
+            $("#headtitle").text('农业普查' + title + '专题');
             //清空菜单
             $("#zbul").children().remove();
             //动态建立菜单
@@ -222,7 +222,7 @@
                     }
                     //查询地区名称
                     if(curdzm=='37121')
-                        curdq = '莱芜市';
+                        curdq = '';
                     else
                         curdq = result.find(x=>x['区划码']==curdzm)['地区'];                    
                     AddFeatureLayer(layno, curdzm, true);
