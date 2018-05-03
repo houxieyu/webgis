@@ -5,14 +5,14 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
     <link rel="stylesheet" href="../css/bootstrap.min.css" />
-    <link rel="stylesheet" href="../arcgisjs/3.18/dijit/themes/claro/claro.css"
-    />
-    <link rel="stylesheet" href="../arcgisjs/3.18/esri/css/esri.css" />
+    <link rel="stylesheet" href="https://js.arcgis.com/3.18/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="https://js.arcgis.com/3.18/esri/css/esri.css">
     <link rel="stylesheet" href="../Scripts/jqueryui/jquery-ui.min.css" />
     <script src="../Scripts/jquery-1.10.2.min.js"></script>
     <script src="../Scripts/bootstrap.min.js"></script>
     <script src="../Scripts/jqueryui/jquery-ui.min.js"></script>
-    <script src="../arcgisjs/3.18/init.js"></script>
+    <script src="https://js.arcgis.com/3.18/"></script>
+    <script src="../Scripts/serverip.js"></script>
     <script src="MyGis.js"></script>
     <title>莱芜市农业普查核密度分析专题</title>
     <style>
@@ -80,77 +80,86 @@
 <body>
     <script>
         var ztinfos = ['农业人口密度', '实际耕地密度', '生猪养殖密度', '蔬菜种植密度'];
+        var bigdata;
         $(function () {
-            //显示底图
-            require([
-                "esri/map", "esri/layers/ArcGISDynamicMapServiceLayer"
-            ], function (Map, ArcGISDynamicMapServiceLayer) {
+            /**
+             * 获取json数据回调后渲染地图
+             */
+            $.getJSON("../Scripts/bigdata.json", function (ret) {
+                bigdata = ret;
+                //显示底图
+                require([
+                    "esri/map", "esri/layers/ArcGISDynamicMapServiceLayer"
+                ], function (Map, ArcGISDynamicMapServiceLayer) {
 
-                function InitMap(mapid, addstr) {
-                    var mapoption = {
-                        basemap: "osm",
-                        zoom: 12,
-                        slider: false,
-                        center: [117.67, 36.21],
-                        showLabels: true
-                    };
-                    var opacity = 0.5;
-                    map = new Map(mapid, mapoption);
+                    function InitMap(mapid, addstr) {
+                        var mapoption = {
+                            basemap: "osm",
+                            zoom: 12,
+                            slider: false,
+                            center: [117.67, 36.21],
+                            showLabels: true
+                        };
+                        var opacity = 0.5;
+                        map = new Map(mapid, mapoption);
 
-                    //var mapurl = basemapURL;
-                    // agoLayer = new ArcGISDynamicMapServiceLayer(mapurl, {
-                    //     "opacity": opacity
-                    // });
-                    // map.addLayer(agoLayer);
-                    if (addstr == 'geotool') {
-                        CreateGEOTool();
+                        //var mapurl = basemapURL;
+                        // agoLayer = new ArcGISDynamicMapServiceLayer(mapurl, {
+                        //     "opacity": opacity
+                        // });
+                        // map.addLayer(agoLayer);
+                        if (addstr == 'geotool') {
+                            CreateGEOTool();
+                        }
+                        //CreateFlowInfo('人口数,renkou;耕地面积,shijigd;小麦面积,xiaomai;玉米面积,yumi;生猪养殖,zhucunlan;');
                     }
-                    //CreateFlowInfo('人口数,renkou;耕地面积,shijigd;小麦面积,xiaomai;玉米面积,yumi;生猪养殖,zhucunlan;');
-                }
 
-                function AddDensity(mapid, lyno) {
-                    if (densityLayer != null) {
-                        map.removeLayer(densityLayer);
+                    function AddDensity(mapid, lyno) {
+                        if (densityLayer != null) {
+                            map.removeLayer(densityLayer);
+                        }
+                        mapurl = densityURL;
+                        opacity = 0.8;
+
+                        densityLayer = new ArcGISDynamicMapServiceLayer(mapurl, {
+                            "opacity": opacity
+                        });
+                        map.addLayer(densityLayer);
+
+                        if (lyno != null) {
+                            densityLayer.setVisibleLayers([0, 1, lyno + 2]);
+                        }
+
+                        if (lyno == 0)
+                            CreateLegend(map, '密度分布图例', densityLayer, true);
+                        //map.getLayer(map.layerIds[lyno]).setVisibleLayers()
                     }
-                    mapurl = densityURL;
-                    opacity = 0.8;
 
-                    densityLayer = new ArcGISDynamicMapServiceLayer(mapurl, {
-                        "opacity": opacity
+                    InitLayout();
+                    //创建图层和图层管理界面
+                    for (i = 0; i < ztinfos.length; i++) {
+                        var it = document.createElement('div');
+                        it.className = 'layeritem';
+                        it.innerHTML = "<input type='radio' name='ly' id='radio" + i +
+                            "' value='" + i +
+                            "' " + (i == 0 ?
+                                "checked='checked'" : "") +
+                            " /><h4><label for='radio" + i + "'>" + ztinfos[i] +
+                            "</label></h4>";
+                        document.getElementById('layerctl').appendChild(it);
+                    }
+
+                    $("input").change(function (event) {
+                        if (event.target.checked)
+                            SetDensityVisible(parseInt(event.target.value));
                     });
-                    map.addLayer(densityLayer);
 
-                    if (lyno != null) {
-                        densityLayer.setVisibleLayers([0, 1, lyno + 2]);
-                    }
+                    InitMap('map', 'geotool');
+                    AddDensity('map', 0);
 
-                    if (lyno == 0)
-                        CreateLegend(map, '密度分布图例', densityLayer, true);
-                    //map.getLayer(map.layerIds[lyno]).setVisibleLayers()
-                }
-
-                InitLayout();
-                //创建图层和图层管理界面
-                for (i = 0; i < ztinfos.length; i++) {
-                    var it = document.createElement('div');
-                    it.className = 'layeritem';
-                    it.innerHTML = "<input type='radio' name='ly' id='radio" + i + "' value='" + i +
-                        "' " + (i == 0 ?
-                            "checked='checked'" : "") +
-                        " /><h4><label for='radio" + i + "'>" + ztinfos[i] + "</label></h4>";
-                    document.getElementById('layerctl').appendChild(it);
-                }
-
-                $("input").change(function (event) {
-                    if (event.target.checked)
-                        SetDensityVisible(parseInt(event.target.value));
+                    //addQXBJLayer();
+                    //$('#myModal').modal({ backdrop: false });
                 });
-
-                InitMap('map', 'geotool');
-                AddDensity('map', 0);
-
-                //addQXBJLayer();
-                //$('#myModal').modal({ backdrop: false });
             });
         });
     </script>

@@ -1,11 +1,11 @@
-﻿    var serverip;
-    $.ajaxSettings.async = false; 
-    $.getJSON("../Scripts/serverip.json", function (result){
-        console.log(result);
-        serverip = result.ip;
-    });
-var featureURL = "http://"+serverip+":6080/arcgis/rest/services/lwbj/MapServer/";
-var basemapURL = "http://"+serverip+":6080/arcgis/rest/services/lwbj/MapServer";
+﻿    // var serverip;
+    // $.ajaxSettings.async = false; 
+    // $.getJSON("../Scripts/serverip.json", function (result){
+    //     console.log(result);
+    //     serverip = result.ip;
+    // });
+var featureURL = "http://"+serverip+"/arcgis/rest/services/lwbj/MapServer/";
+var basemapURL = "http://"+serverip+"/arcgis/rest/services/lwbj/MapServer";
 var map;
 var featureLayer;
 var datas;

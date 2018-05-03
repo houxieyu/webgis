@@ -33,13 +33,13 @@ define(['renderFactory', "esri/Map","esri/views/MapView",'esri/Basemap',"esri/co
     var tdmlayerurls = [tdvecmkurl,tdsatmurl,tdtermurl];
     var canDraw = false;
 
-    var serverip;
-    $.ajaxSettings.async = false; 
-    $.getJSON("../Scripts/serverip.json", function (result){
-        console.log(result);
-        serverip = result.ip;
-    });
-    $.ajaxSettings.async = true; 
+    // var serverip;
+    // $.ajaxSettings.async = false; 
+    // $.getJSON("../Scripts/serverip.json", function (result){
+    //     console.log(result);
+    //     serverip = result.ip;
+    // });
+    // $.ajaxSettings.async = true; 
     var qxdzms = ['370811','370812','370826','370827','370828','370829','370830','370831','370832','370871','370881','370883'];
     function setBaseMap(basetype){
         var tdbaselayer = new WebTileLayer({
@@ -72,13 +72,10 @@ define(['renderFactory', "esri/Map","esri/views/MapView",'esri/Basemap',"esri/co
         if(findQXBaseLayer()==null)
         {
             var baselayer = new MapImageLayer({
-                url: 'http://' + serverip + ':6080/arcgis/rest/services/lwbj/MapServer/',
+                url: 'http://' + serverip + '/arcgis/rest/services/lwbj/MapServer/',
                 opacity:0.8,
                 id:'qxbase'
             });
-/*                new MapImageLayer({
-            url: "http://"+serverip+":6080/arcgis/rest/services/JINING/JININGmap/MapServer"
-        });*/
 
             map.layers.unshift(baselayer);
         }
@@ -86,7 +83,7 @@ define(['renderFactory', "esri/Map","esri/views/MapView",'esri/Basemap',"esri/co
     var spatiallayer;
     function addSpatialLayer(){
         spatiallayer = new FeatureLayer({
-            url: 'http://' + serverip + ':6080/arcgis/rest/services/lwbj/MapServer/9',
+            url: 'http://' + serverip + '/arcgis/rest/services/lwbj/MapServer/9',
             opacity:0,
             id:'spatiallayer',
             outFields: ["NAME", "AREA_CODE"]//,
@@ -117,7 +114,6 @@ define(['renderFactory', "esri/Map","esri/views/MapView",'esri/Basemap',"esri/co
     function initMap(viewtype,viewmodel){
         //parser.parse();
         esriConfig.request.corsEnabledServers.push("t0.tianditu.com", "t1.tianditu.com", "t2.tianditu.com");
-        esriConfig.request.corsEnabledServers.push("124.133.27.90:6081");
         if(map==null) {
             map = new Map({
             //    basemap:"osm",
@@ -325,7 +321,7 @@ define(['renderFactory', "esri/Map","esri/views/MapView",'esri/Basemap',"esri/co
         //graphicsLayer.add(polylineGraphic);
         //graphicsLayer.add(polygonGraphic);
     }
-    var urlpre = 'http://'+serverip+':6080/arcgis/rest/services/lwbj/MapServer/';
+    var urlpre = 'http://'+serverip+'/arcgis/rest/services/lwbj/MapServer/';
     var layerurls = [1,2,3,4];
     var ptlayerurls = [5,6,7,8];  
     var datasource;  
@@ -384,12 +380,12 @@ define(['renderFactory', "esri/Map","esri/views/MapView",'esri/Basemap',"esri/co
     var qgraphics;
     function spatialQuery(){
         var queryTask = new QueryTask({
-            url: "http://"+serverip+":6080/arcgis/rest/services/lwbj/MapServer/9"  // URL of a feature layer representing U.S. cities
+            url: "http://"+serverip+"/arcgis/rest/services/lwbj/MapServer/9"  // URL of a feature layer representing U.S. cities
         });
         var selectQuery = spatiallayer.createQuery();
         selectQuery.set({
             geometry : querypolygon,
-            outFields : ["np_DBO_lwbj_cun.NAME", "np_DBO_lwbj_cun.AREA_CODE",'lwdata.农业人口数'],
+            outFields : ["lwbj_cun.NAME", "lwbj_cun.AREA_CODE",'lwdata.农业人口数'],
             spatialRelationship:$('#tpgx').val()
         });
         /*   var selectsymbol = new SimpleFillSymbol({
@@ -406,11 +402,11 @@ define(['renderFactory', "esri/Map","esri/views/MapView",'esri/Basemap',"esri/co
                     type: "fields",
                     fieldInfos: [
                         {
-                            fieldName: "np_DBO_lwbj_cun.NAME",
+                            fieldName: "lwbj_cun.NAME",
                             label: "地区"
                         },
                         {
-                            fieldName: "np_DBO_lwbj_cun.AREA_CODE",
+                            fieldName: "lwbj_cun.AREA_CODE",
                             label: "区划码"
                         },
                         {
@@ -432,14 +428,14 @@ define(['renderFactory', "esri/Map","esri/views/MapView",'esri/Basemap',"esri/co
                 result.symbol =new SimpleFillSymbol({
                     color: [0, 0, 0, 0.1],
                     outline: { // autocasts as new SimpleLineSymbol()
-                        color: result.attributes['np_DBO_lwbj_cun.AREA_CODE'].substr(9,3)<200?[255,0,0]:[255, 255, 0],
+                        color: result.attributes['lwbj_cun.AREA_CODE'].substr(9,3)<200?[255,0,0]:[255, 255, 0],
                         width: 1
                     }
                 });
                 result.popupTemplate = popuptemplate;
                 totalrenkou += result.attributes['lwdata.农业人口数'];
                 //添加条目
-                var li="<li class='panel-result' liid='"+index+"'>"+result.attributes['np_DBO_lwbj_cun.NAME']+":"+result.attributes['np_DBO_lwbj_cun.AREA_CODE']+" </li>";
+                var li="<li class='panel-result' liid='"+index+"'>"+result.attributes['lwbj_cun.NAME']+":"+result.attributes['lwbj_cun.AREA_CODE']+" </li>";
                 $('#nyc_graphics').append(li);
             });
             var r = "<b>查询范围内有村居<font color='red'>" + results.features.length + "</font>个<br/>人口数：" + totalrenkou;

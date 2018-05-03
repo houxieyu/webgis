@@ -68,13 +68,13 @@ $(function () {
 
 var legend;
 var map;
-var serverip;
-$.ajaxSettings.async = false; 
-$.getJSON("../Scripts/serverip.json", function (result){
-    console.log(result);
-    serverip = result.ip;
-});
-var agoServiceURL = "http://"+serverip+":6080/arcgis/rest/services/lwbj/MapServer/";
+// var serverip;
+// $.ajaxSettings.async = false; 
+// $.getJSON("../Scripts/serverip.json", function (result){
+//     console.log(result);
+//     serverip = result.ip;
+// });
+var agoServiceURL = "http://"+serverip+"/arcgis/rest/services/lwbj/MapServer/";
 var agoLayer;
 require([
     "esri/map", "esri/dijit/PopupTemplate", "esri/layers/FeatureLayer", "esri/InfoTemplate",

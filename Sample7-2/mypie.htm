@@ -4,10 +4,11 @@
 <head>
     <meta charset="utf-8">
     <title>饼图专题图</title>
-    <link rel="stylesheet" href="http://124.133.27.90:6081/arcgis_js_api3.18/library/3.18/3.18/dijit/themes/claro/claro.css"
-    />
-    <link rel="stylesheet" href="http://124.133.27.90:6081/arcgis_js_api3.18/library/3.18/3.18/esri/css/esri.css" />
+    <link rel="stylesheet" href="https://js.arcgis.com/3.18/dijit/themes/claro/claro.css">
+    <link rel="stylesheet" href="https://js.arcgis.com/3.18/esri/css/esri.css">
     <link href="ChartInfoWindow.css" rel="stylesheet" />
+    <script src="../Scripts/serverip.js"></script>
+
     <style>
     h2,h3{
         margin-bottom: 3px;
@@ -42,7 +43,7 @@
         };
     </script>
         <script src="../Scripts/jquery-1.10.2.min.js"></script>
-    <script src="http://124.133.27.90:6081/arcgis_js_api3.18/library/3.18/3.18/init.js"></script>
+        <script src="https://js.arcgis.com/3.18/"></script>
     <script>
         var result;
         var datas;
@@ -127,7 +128,7 @@
             // map.addLayer(agoLayer);
 
             var featureLayer = new FeatureLayer(
-                "http://124.133.27.90:6080/arcgis/rest/services/lwbj/MapServer/3", {
+                "http://"+serverip+"/arcgis/rest/services/lwbj/MapServer/3", {
                     mode: FeatureLayer.MODE_SNAPSHOT,
                     outFields: ["AREA_CODE", "NAME"]
                 });

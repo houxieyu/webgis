@@ -1,7 +1,6 @@
 
-var gisapiurls = ["arcgisapi", "http://124.133.27.90:6081/arcgis_js_api3.18/library/3.18/3.18",
-    "http://124.133.27.90:6081/library/4.3", "../arcgisjs/4.3"];
-var urlidx = 3;
+var gisapiurls = ["../arcgisjs/4.3"];
+var urlidx = 0;
 require.config({
     paths: {
         "jquery": "jquery",

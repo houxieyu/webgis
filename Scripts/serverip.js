@@ -1,1 +1,1 @@
-export var serverip = '124.133.27.90';
+var serverip = "124.133.27.90:6080";
